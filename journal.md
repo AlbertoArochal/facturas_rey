@@ -2,8 +2,9 @@
 
 ## Último estado — 24/06/2026
 
-### Commits (8)
+### Commits (9)
 ```
+a8b1a27 Fix PDF layout: elimina solapamientos, ajusta header/tablas/IGIC/footer al formato del Excel de referencia
 8f30653 Header PDF rediseñado (sin solapamiento) + preview provisional + Suspense boundary + solo filas con datos
 0ad74f1 first commit
 ebc471a journal actualizado con estado final antes de reinicio de sesión
@@ -18,8 +19,10 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 - **Dashboard `/`**: Generar Factura (?nuevo=1), Retomar trabajo, Descargar último PDF
 - **Formulario `/factura`**: receptor + conceptos con tipo (material/mano_obra), auto-save, validación, descarga PDF
 - **API `/api/generar`**: PDF con cabecera, 2 tablas (MATERIAL + MANO DE OBRA), IGIC 7%, footer
-- **Header rediseñado**: ELECTRICIDAD & + FONTANERÍA a la derecha, Reinaldo Rocha López a la izquierda, FACTURA grande a la izquierda. Sin solapamiento.
-- **Tablas dinámicas**: solo dibuja filas con datos (no 24 filas vacías). Descripción truncada a 50 chars.
+- **Header rediseñado**: ELECTRICIDAD & FONTANERÍA + CIF a la derecha, Reinaldo Rocha López a la izquierda, FACTURA grande abajo. Sin solapamiento verificado con pdfminer.
+- **Tablas dinámicas**: solo dibuja filas con datos. Descripción truncada a 32 chars para no solapar con columna CANT. Columnas alineadas con Excel de referencia.
+- **IGIC**: calculado solo sobre MANO DE OBRA (como en Excel). Layout igual al spreadsheet: IGIC|0.07|<importe>|Totales|<subtotal+igic> + TOTALES|EUROS|<gran_total>
+- **Footer**: "Conforme cliente," + IBAN a la derecha. "C/Los Toledo..." izquierda. "Proyectos y Asistencia Técnica" derecha.
 - **Factura Provisional**: descarga + abre previsualización en nueva pestaña
 - **Suspense boundary**: arreglado error de build con useSearchParams()
 - **Tema**: Catppuccin Mocha oscuro
@@ -30,4 +33,3 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 
 ### Pendiente (próxima sesión)
 1. Desplegar en Vercel (verificar que api/index.py funciona con serverless)
-2. Ajustar layout de columnas en tabla PDF para que coincida más exactamente con referencia
