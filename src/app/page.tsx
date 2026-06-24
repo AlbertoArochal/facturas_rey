@@ -2,43 +2,50 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50">
-      <header className="bg-white border-b border-zinc-200">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <h1 className="text-2xl font-bold text-zinc-900">Facturas Rey</h1>
-          <p className="text-sm text-zinc-500">Generación y gestión de facturas</p>
+    <div className="flex flex-col min-h-screen bg-base">
+      <header className="bg-mantle border-b border-surface-0">
+        <div className="max-w-4xl mx-auto px-6 py-5">
+          <h1 className="text-xl font-bold text-text">Facturas Rey</h1>
+          <p className="text-sm text-overlay-0">
+            Generación y gestión de facturas
+          </p>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="max-w-md w-full text-center space-y-6">
+        <div className="max-w-md w-full text-center space-y-8">
           <div className="space-y-2">
-            <h2 className="text-3xl font-semibold text-zinc-900">
-              Bienvenido
-            </h2>
-            <p className="text-zinc-600">
+            <h2 className="text-3xl font-semibold text-text">Bienvenido</h2>
+            <p className="text-subtext-0">
               Genere facturas profesionales de forma rápida y sencilla.
             </p>
           </div>
 
           <Link
             href="/factura"
-            className="inline-block w-full rounded-lg bg-zinc-900 px-6 py-3 text-white font-medium hover:bg-zinc-800 transition-colors"
+            className="inline-block w-full rounded-lg bg-mauve px-6 py-3 text-base font-medium text-base hover:brightness-110 transition-all"
           >
             Generar Factura
           </Link>
 
-          <div className="border-t border-zinc-200 pt-6 mt-6">
-            <p className="text-sm text-zinc-400">
-              Sus facturas se guardan automáticamente.
-              Puede retomar su trabajo o descargar el último PDF desde aquí.
+          <div className="border-t border-surface-0 pt-8 mt-8 space-y-3">
+            <p className="text-sm text-overlay-1">
+              Su última factura está guardada.
             </p>
+            <div className="flex gap-3">
+              <button className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors">
+                Retomar trabajo
+              </button>
+              <button className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors">
+                Descargar último PDF
+              </button>
+            </div>
           </div>
         </div>
       </main>
 
-      <footer className="border-t border-zinc-200 py-4">
-        <p className="text-center text-xs text-zinc-400">
+      <footer className="border-t border-surface-0 py-4">
+        <p className="text-center text-xs text-overlay-0">
           &copy; {new Date().getFullYear()} Facturas Rey
         </p>
       </footer>
