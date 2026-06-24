@@ -28,8 +28,13 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 - **Tema**: Catppuccin Mocha oscuro
 - **Dev server**: `nohup npx next dev -H 0.0.0.0 -p 3000 > /tmp/nextdev.log 2>&1 &`
 - **Restart server**: `kill -9 $(lsof -t -i:3000) 2>/dev/null; sleep 1`
-- **Test PDF**: `source venv/bin/activate && echo '...' | python3 api/generate_pdf.py > /tmp/test.pdf`
+- **Test PDF**: `source venv/bin/activate && echo '...' | python3 generate_pdf.py > /tmp/test.pdf`
 - **Python venv**: `source venv/bin/activate`
 
+### Fixes aplicados para Vercel deploy
+- `api/generar.py`: Cambiado import de `from api.pdf_generator` a `from pdf_generator` (Vercel añade `api/` al `sys.path`, no el directorio padre)
+- `generate_pdf.py`: Movido fuera de `api/` (era un script CLI sin `handler` class, Vercel intentaba desplegarlo como serverless function y fallaba). Ajustado `sys.path` al moverse.
+- `vercel.json`: Sin cambios necesarios, la config `vercel-python@3.0.0` es correcta.
+
 ### Pendiente (próxima sesión)
-1. Desplegar en Vercel (verificar que api/index.py funciona con serverless)
+1. ~~Desplegar en Vercel (verificar que api/index.py funciona con serverless)~~ → Probar `vercel deploy` o `vercel --prod` tras los fixes
