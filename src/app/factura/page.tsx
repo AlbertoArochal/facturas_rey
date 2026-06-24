@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Concepto = {
@@ -27,7 +27,7 @@ const INITIAL_CONCEPTOS: Concepto[] = Array.from({ length: 5 }, () => ({
   tipo: "material",
 }));
 
-export default function FacturaPage() {
+function FacturaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const esNuevo = searchParams.get("nuevo") === "1";
@@ -183,10 +183,18 @@ export default function FacturaPage() {
       localStorage.setItem("factura_ultimo_pdf", b64);
 
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `factura_${tipo}.pdf`;
-      a.click();
+      if (tipo === "provisional") {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `factura_provisional.pdf`;
+        a.click();
+        window.open(url, "_blank");
+      } else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `factura_${tipo}.pdf`;
+        a.click();
+      }
       URL.revokeObjectURL(url);
     } catch {
       setErrores((prev) => ({
@@ -422,5 +430,13 @@ export default function FacturaPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FacturaPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen bg-base items-center justify-center text-text text-lg">Cargando...</div>}>
+      <FacturaForm />
+    </Suspense>
   );
 }

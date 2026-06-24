@@ -7,8 +7,9 @@ from datetime import datetime
 
 
 IGIC_RATE = 0.07
-ROWS_PER_TABLE = 24
 PAGE_WIDTH, PAGE_HEIGHT = A4
+MARGIN = 20 * mm
+FOOTER_Y = 25 * mm
 
 
 def _fmt_num(n: float) -> str:
@@ -16,23 +17,22 @@ def _fmt_num(n: float) -> str:
 
 
 def _draw_header(c: canvas.Canvas, y: float) -> float:
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(20 * mm, y, "ELECTRICIDAD &")
-    y -= 6 * mm
-    c.drawString(20 * mm, y, "Reinaldo Rocha López")
-    y -= 6 * mm
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(20 * mm, y, "FONTANERÍA")
-    y -= 6 * mm
+    c.drawRightString(190 * mm, y, "ELECTRICIDAD &")
+    y -= 5.5 * mm
+    c.drawString(20 * mm, y, "Reinaldo Rocha López")
+    c.drawRightString(190 * mm, y, "FONTANERÍA")
+    y -= 8 * mm
 
     c.setFont("Helvetica-Bold", 36)
-    c.drawString(150 * mm, y + 12 * mm, "FACTURA")
+    c.drawString(25 * mm, y, "FACTURA")
+    y -= 14 * mm
 
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(20 * mm, y - 2 * mm, "Cliente")
-    c.drawString(105 * mm, y - 2 * mm, "CIF: 78729195B")
+    c.drawString(25 * mm, y, "Cliente")
+    c.drawRightString(190 * mm, y, "CIF: 78729195B")
 
-    y -= 10 * mm
+    y -= 6 * mm
     c.line(20 * mm, y, 190 * mm, y)
     return y - 4 * mm
 
@@ -131,27 +131,25 @@ def _draw_table(
 
     c.setFont("Helvetica", 8)
     subtotal = 0.0
-    for i in range(ROWS_PER_TABLE):
-        if i < len(items):
-            it = items[i]
-            desc = str(it.get("descripcion", ""))
-            cant = float(it.get("cantidad", 0) or 0)
-            precio = float(it.get("precio", 0) or 0)
-            dto = float(it.get("descuento", 0) or 0)
-            total_linea = cant * precio
-            neto = total_linea * (1 - dto / 100)
-            subtotal += neto
+    for it in items:
+        desc = str(it.get("descripcion", ""))[:50]
+        cant = float(it.get("cantidad", 0) or 0)
+        precio = float(it.get("precio", 0) or 0)
+        dto = float(it.get("descuento", 0) or 0)
+        total_linea = cant * precio
+        neto = total_linea * (1 - dto / 100)
+        subtotal += neto
 
-            ref = str(it.get("ref", ""))
-            if ref:
-                c.drawString(cols["ref"], y, ref[:6])
-            c.drawString(cols["denom"], y, desc[:40])
-            c.drawRightString(cols["cant"] + 8 * mm, y, f"{cant:g}" if cant else "")
-            c.drawRightString(cols["precio"] + 8 * mm, y, _fmt_num(precio) if precio else "")
-            c.drawRightString(cols["total"] + 8 * mm, y, _fmt_num(total_linea) if total_linea else "")
-            if dto:
-                c.drawRightString(cols["dto"] + 8 * mm, y, f"{dto:g}")
-            c.drawRightString(cols["neto"] + 8 * mm, y, _fmt_num(neto) if neto else "0,00")
+        ref = str(it.get("ref", ""))
+        if ref:
+            c.drawString(cols["ref"], y, ref[:6])
+        c.drawString(cols["denom"], y, desc)
+        c.drawRightString(cols["cant"] + 8 * mm, y, f"{cant:g}" if cant else "")
+        c.drawRightString(cols["precio"] + 8 * mm, y, _fmt_num(precio) if precio else "")
+        c.drawRightString(cols["total"] + 8 * mm, y, _fmt_num(total_linea) if total_linea else "")
+        if dto:
+            c.drawRightString(cols["dto"] + 8 * mm, y, f"{dto:g}")
+        c.drawRightString(cols["neto"] + 8 * mm, y, _fmt_num(neto) if neto else "0,00")
         y -= row_height
 
     y -= 2 * mm
@@ -190,7 +188,7 @@ def _draw_igic(
 
 
 def _draw_footer(c: canvas.Canvas, y: float) -> float:
-    y = 30 * mm
+    y = max(y, FOOTER_Y)
     c.setFont("Helvetica", 9)
     c.drawString(20 * mm, y, "Conforme cliente")
     c.drawString(100 * mm, y, "Número de cuenta BBVA: ES1201823000480201516435")
