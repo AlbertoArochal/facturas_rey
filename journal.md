@@ -39,3 +39,4 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 
 ### Pendiente (próxima sesión)
 1. ~~Desplegar en Vercel (verificar que api/index.py funciona con serverless)~~ → Probar `vercel deploy` o `vercel --prod` tras los fixes
+2. ~~Rediseño del PDF para coincidir con el modelo~~ → Completado en commit a43b6cd
