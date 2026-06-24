@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Concepto = {
   descripcion: string;
   cantidad: string;
   precio: string;
+  tipo: "material" | "mano_obra";
 };
 
 function parseNum(val: string): number {
@@ -19,26 +20,47 @@ function fmtImporte(val: number): string {
   return val.toFixed(2);
 }
 
+const INITIAL_CONCEPTOS: Concepto[] = Array.from({ length: 5 }, () => ({
+  descripcion: "",
+  cantidad: "",
+  precio: "",
+  tipo: "material",
+}));
+
 export default function FacturaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const esNuevo = searchParams.get("nuevo") === "1";
 
   const [receptor, setReceptor] = useState({
     nombre: "",
     nif: "",
     direccion: "",
+    telefono: "",
+    diagnosis: "",
+    num_factura: "",
   });
 
-  const [conceptos, setConceptos] = useState<Concepto[]>(
-    Array.from({ length: 5 }, () => ({
-      descripcion: "",
-      cantidad: "",
-      precio: "",
-    }))
-  );
+  const [conceptos, setConceptos] = useState<Concepto[]>(INITIAL_CONCEPTOS);
 
   const [errores, setErrores] = useState<Record<string, string>>({});
+  const cargadoRef = useRef(false);
 
   useEffect(() => {
+    if (esNuevo) {
+      localStorage.removeItem("factura_datos");
+      setReceptor({
+        nombre: "",
+        nif: "",
+        direccion: "",
+        telefono: "",
+        diagnosis: "",
+        num_factura: "",
+      });
+      setConceptos(INITIAL_CONCEPTOS);
+      cargadoRef.current = true;
+      return;
+    }
     const raw = localStorage.getItem("factura_datos");
     if (raw) {
       try {
@@ -49,9 +71,11 @@ export default function FacturaPage() {
         /* ignore */
       }
     }
-  }, []);
+    cargadoRef.current = true;
+  }, [esNuevo]);
 
   const guardar = useCallback(() => {
+    if (!cargadoRef.current) return;
     localStorage.setItem(
       "factura_datos",
       JSON.stringify({ receptor, conceptos })
@@ -86,7 +110,7 @@ export default function FacturaPage() {
   const agregarFila = () => {
     setConceptos((prev) => [
       ...prev,
-      { descripcion: "", cantidad: "", precio: "" },
+      { descripcion: "", cantidad: "", precio: "", tipo: "material" },
     ]);
   };
 
@@ -133,6 +157,8 @@ export default function FacturaPage() {
         descripcion: c.descripcion,
         cantidad: parseNum(c.cantidad),
         precio: parseNum(c.precio),
+        tipo: c.tipo,
+        descuento: 0,
       })),
     };
 
@@ -231,6 +257,39 @@ export default function FacturaPage() {
                 className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-subtext-0 mb-1.5">
+                Teléfono
+              </label>
+              <input
+                type="text"
+                value={receptor.telefono}
+                onChange={(e) => actualizarReceptor("telefono", e.target.value)}
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-subtext-0 mb-1.5">
+                Nº Factura
+              </label>
+              <input
+                type="text"
+                value={receptor.num_factura}
+                onChange={(e) => actualizarReceptor("num_factura", e.target.value)}
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-subtext-0 mb-1.5">
+                Diagnosis
+              </label>
+              <input
+                type="text"
+                value={receptor.diagnosis}
+                onChange={(e) => actualizarReceptor("diagnosis", e.target.value)}
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+              />
+            </div>
           </div>
         </section>
 
@@ -240,12 +299,17 @@ export default function FacturaPage() {
           </h3>
 
           <div className="hidden sm:grid grid-cols-12 gap-3 mb-2 px-3">
-            <div className="col-span-6">
+            <div className="col-span-5">
               <span className="text-xs text-overlay-1 uppercase tracking-wider">
                 Descripción
               </span>
             </div>
             <div className="col-span-2">
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">
+                Tipo
+              </span>
+            </div>
+            <div className="col-span-1">
               <span className="text-xs text-overlay-1 uppercase tracking-wider">
                 Cant.
               </span>
@@ -267,7 +331,7 @@ export default function FacturaPage() {
             return (
               <div key={i}>
                 <div className="grid grid-cols-12 gap-3 mb-1">
-                  <div className="col-span-12 sm:col-span-6">
+                  <div className="col-span-12 sm:col-span-5">
                     <input
                       type="text"
                       value={c.descripcion}
@@ -278,7 +342,23 @@ export default function FacturaPage() {
                       className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
                     />
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
+                  <div className="col-span-7 sm:col-span-2">
+                    <select
+                      value={c.tipo}
+                      onChange={(e) =>
+                        actualizarConcepto(
+                          i,
+                          "tipo",
+                          e.target.value as "material" | "mano_obra"
+                        )
+                      }
+                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-2 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                    >
+                      <option value="material">Material</option>
+                      <option value="mano_obra">Mano de Obra</option>
+                    </select>
+                  </div>
+                  <div className="col-span-3 sm:col-span-1">
                     <input
                       type="text"
                       value={c.cantidad}
@@ -289,7 +369,7 @@ export default function FacturaPage() {
                       className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
                     />
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
+                  <div className="col-span-5 sm:col-span-2">
                     <input
                       type="text"
                       value={c.precio}

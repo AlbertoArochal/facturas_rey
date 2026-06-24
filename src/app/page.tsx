@@ -48,7 +48,7 @@ export default function Home() {
           </div>
 
           <Link
-            href="/factura"
+            href="/factura?nuevo=1"
             className="inline-block w-full rounded-lg bg-mauve px-6 py-3 text-base font-medium text-base hover:brightness-110 transition-all"
           >
             Generar Factura
