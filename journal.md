@@ -34,7 +34,8 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 ### Fixes aplicados para Vercel deploy
 - `api/generar.py`: Cambiado import de `from api.pdf_generator` a `from pdf_generator` (Vercel añade `api/` al `sys.path`, no el directorio padre)
 - `generate_pdf.py`: Movido fuera de `api/` (era un script CLI sin `handler` class, Vercel intentaba desplegarlo como serverless function y fallaba). Ajustado `sys.path` al moverse.
-- `vercel.json`: Sin cambios necesarios, la config `vercel-python@3.0.0` es correcta.
+- `vercel.json`: Configurado con `"$schema"`, `"framework": "nextjs"` y `"functions": {"api/**/*.py": {"maxDuration": 60}}` para sobreescribir configuración antigua del dashboard que tenía `runtime` sin versión (causaba `Function Runtimes must have a valid version`).
+- `.python-version`: Creado con `3.13` para que Vercel use Python 3.13 explícitamente.
 
 ### Pendiente (próxima sesión)
 1. ~~Desplegar en Vercel (verificar que api/index.py funciona con serverless)~~ → Probar `vercel deploy` o `vercel --prod` tras los fixes
