@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 import json
-from pdf_generator import generar_factura_pdf
+from api.pdf_generator import generar_factura_pdf
 
 
 class handler(BaseHTTPRequestHandler):
