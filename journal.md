@@ -20,7 +20,23 @@
 - Instaladas dependencias Python en venv local
 - Dev server funcionando en `http://localhost:3000`
 
+## Commit 3 — Lógica client-side completa + API funcional
+
+- Dashboard (`/`) convertido a cliente con:
+  - Botón "Retomar trabajo" navega a `/factura` con datos guardados
+  - Botón "Descargar último PDF" recupera PDF desde localStorage
+  - Sección de persistencia se muestra solo si hay datos guardados
+- Formulario (`/factura`) convertido a cliente con:
+  - State para receptor (nombre, nif, direccion) y array dinámico de conceptos
+  - Autocálculo de importe = cantidad × precio en tiempo real
+  - Botón "+ Agregar más" añade filas dinámicamente
+  - Validación: filas vacías se ignoran, filas incompletas muestran warning en rojo
+  - Persistencia automática en localStorage (`factura_datos`)
+  - Botones "Factura Provisional" y "Factura Final" llaman al API y descargan PDF
+- API route `/api/generar` que ejecuta `api/generate_pdf.py` vía venv Python
+- PDF generado correctamente con reportlab
+
 ### Próximos pasos:
-1. Implementar lógica client-side (autocalcular importes, persistencia localStorage)
-2. Implementar validaciones y warnings visuales
-3. Conectar frontend con backend Python para generación de PDF
+1. Revisar diseño del PDF generado contra el PDF de referencia
+2. Mejorar manejo de errores y feedback visual al usuario
+3. Preparar despliegue en Vercel

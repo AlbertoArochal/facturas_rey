@@ -1,6 +1,32 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [tieneDatos, setTieneDatos] = useState(false);
+  const [tienePdf, setTienePdf] = useState(false);
+
+  useEffect(() => {
+    setTieneDatos(localStorage.getItem("factura_datos") !== null);
+    setTienePdf(localStorage.getItem("factura_ultimo_pdf") !== null);
+  }, []);
+
+  const descargarUltimoPdf = () => {
+    const b64 = localStorage.getItem("factura_ultimo_pdf");
+    if (!b64) return;
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "factura.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-base">
       <header className="bg-mantle border-b border-surface-0">
@@ -28,19 +54,31 @@ export default function Home() {
             Generar Factura
           </Link>
 
-          <div className="border-t border-surface-0 pt-8 mt-8 space-y-3">
-            <p className="text-sm text-overlay-1">
-              Su última factura está guardada.
-            </p>
-            <div className="flex gap-3">
-              <button className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors">
-                Retomar trabajo
-              </button>
-              <button className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors">
-                Descargar último PDF
-              </button>
+          {(tieneDatos || tienePdf) && (
+            <div className="border-t border-surface-0 pt-8 mt-8 space-y-3">
+              <p className="text-sm text-overlay-1">
+                Su última factura está guardada.
+              </p>
+              <div className="flex gap-3">
+                {tieneDatos && (
+                  <Link
+                    href="/factura"
+                    className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors"
+                  >
+                    Retomar trabajo
+                  </Link>
+                )}
+                {tienePdf && (
+                  <button
+                    onClick={descargarUltimoPdf}
+                    className="flex-1 rounded-lg border border-surface-1 px-4 py-2 text-sm text-subtext-0 hover:bg-surface-0 transition-colors"
+                  >
+                    Descargar último PDF
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
