@@ -1,149 +1,209 @@
+"""Generador de PDF de facturas – réplica fiel al modelo Excel/PDF de Reinaldo Rocha."""
+
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from io import BytesIO
 from datetime import datetime
 
-
-IGIC_RATE = 0.07
+# ---------------------------------------------------------------------------
+# Constants – A4 in points (595.27 × 841.89)
+# ---------------------------------------------------------------------------
 PAGE_WIDTH, PAGE_HEIGHT = A4
-LEFT = 20 * mm
-RIGHT = 190 * mm
-USABLE = RIGHT - LEFT
+IGIC_RATE = 0.07
 
-# Column positions (from left margin)
-COL_REF = LEFT
-COL_DENOM = LEFT + 12 * mm
-COL_CANT = LEFT + 65 * mm
-COL_PRECIO = LEFT + 85 * mm
-COL_TOTAL = LEFT + 108 * mm
-COL_DTO = LEFT + 128 * mm
-COL_NETO = RIGHT
+# Horizontal positions extracted from the reference PDF (pts)
+LEFT = 61.8
+RIGHT = 547.9
 
-LIGHT_GRAY = colors.Color(0.85, 0.85, 0.85)
+COL_REF = 72.1
+COL_DENOM = 134.0
+COL_CANT = 241.7
+COL_PRECIO = 287.2
+COL_TOTAL = 344.8
+COL_DTO = 392.0
+COL_NETO = 475.7
+
+# Vertical positions from TOP of the page (pts)
+# In ReportLab y=0 is the bottom, so we use PAGE_HEIGHT - y_top
+Y_ELECTRICIDAD = 82.0
+Y_REINALDO = 85.5
+Y_FONTANERIA = 93.0
+Y_FACTURA = 118.1
+Y_CIF = 132.8
+Y_NOMBRE = 143.5
+Y_DIRECCION = 154.1
+Y_DIRECCION2 = 164.8
+Y_TELF = 168.7
+Y_DIAGNOSIS = 175.5
+Y_SUBHEADERS = 201.1
+Y_HEADERS = 211.7
+Y_FIRST_ROW = 222.4
+ROW_HEIGHT = 10.7          # ~3.8 mm
+
+Y_MATERIAL_TOTAL = 468.1
+Y_MANO_HEADERS = 521.5
+Y_MANO_FIRST_ROW = 532.1
+Y_MANO_TOTAL = 617.6
+Y_IGIC = 628.3
+Y_TOTALES = 681.7
+Y_FOOTER1 = 715.4
+Y_FOOTER2 = 745.9
+Y_FOOTER3 = 757.0
+
+# Number of rows per table section
+TABLE_ROWS = 22
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 def _fmt_num(n: float) -> str:
     return f"{n:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def _draw_header(c: canvas.Canvas, y: float) -> float:
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(RIGHT, y, "ELECTRICIDAD & FONTANERÍA")
+def _to_bottom(y_top: float) -> float:
+    """Convert a y coordinate measured from the top of the page to ReportLab's
+    bottom-up coordinate system."""
+    return PAGE_HEIGHT - y_top
+
+
+def _wrap_text(text: str, max_chars: int) -> list[str]:
+    """Very naive word-wrap for table descriptions."""
+    words = text.split()
+    lines = []
+    current = ""
+    for w in words:
+        if len(current) + len(w) + 1 <= max_chars:
+            current = (current + " " + w).strip()
+        else:
+            if current:
+                lines.append(current)
+            current = w
+    if current:
+        lines.append(current)
+    return lines if lines else [""]
+
+
+# ---------------------------------------------------------------------------
+# Drawing routines
+# ---------------------------------------------------------------------------
+def _draw_header(c: canvas.Canvas) -> None:
+    """Top header: ELECTRICIDAD & / FONTANERÍA (right), Reinaldo Rocha López (big centre-ish),
+    FACTURA (left), CIF (right)."""
+    # ELECTRICIDAD &  (right, bold 9 pt)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawRightString(RIGHT, _to_bottom(Y_ELECTRICIDAD), "ELECTRICIDAD &")
+
+    # FONTANERÍA (right, bold 9 pt, below)
+    c.drawRightString(RIGHT, _to_bottom(Y_FONTANERIA), "FONTANERÍA")
+
+    # Reinaldo Rocha López  (big, bold ~18 pt, roughly centred)
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(129.1, _to_bottom(Y_REINALDO), "Reinaldo  Rocha  López")
+
+    # FACTURA (left, bold 9 pt)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(81.7, _to_bottom(Y_FACTURA), "FACTURA")
+
+    # CIF (right, 9 pt)
     c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT, y - 4.5 * mm, "CIF: 78729195B")
-    y -= 12 * mm
-
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(LEFT, y, "Reinaldo Rocha López")
-    y -= 15 * mm
-
-    c.setFont("Helvetica-Bold", 36)
-    c.drawString(LEFT + 5 * mm, y, "FACTURA")
-    y -= 16 * mm
-
-    c.line(LEFT, y, RIGHT, y)
-    return y - 5 * mm
+    c.drawRightString(RIGHT, _to_bottom(Y_CIF), "CIF: 78729195B")
 
 
-def _draw_cliente(c: canvas.Canvas, y: float, receptor: dict) -> float:
-    nombre = receptor.get("nombre", "")
-    nif = receptor.get("nif", "")
-    direccion = receptor.get("direccion", "")
-    telefono = receptor.get("telefono", "")
-    admin = receptor.get("admin", "")
-
-    line_h = 5 * mm
+def _draw_cliente(c: canvas.Canvas, receptor: dict) -> None:
+    """Cliente block – labels left, values left; Fecha / Nº Fact / Telf right."""
+    nombre = str(receptor.get("nombre", ""))
+    direccion = str(receptor.get("direccion", ""))
+    direccion2 = str(receptor.get("direccion2", ""))
+    admin = str(receptor.get("admin", ""))
+    telefono = str(receptor.get("telefono", ""))
+    num_factura = str(receptor.get("num_factura", ""))
+    diagnosis = str(receptor.get("diagnosis", ""))
+    fecha = receptor.get("fecha", datetime.now().strftime("%d/%m/%Y"))
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(LEFT, y, "Nombre:")
+    c.drawString(61.7, _to_bottom(Y_NOMBRE), "Nombre:")
     c.setFont("Helvetica", 9)
-    c.drawString(LEFT + 17 * mm, y, str(nombre)[:60])
+    c.drawString(105.4, _to_bottom(Y_NOMBRE), nombre[:60])
     c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(RIGHT - 18 * mm, y, "Nº Fact:")
+    c.drawRightString(RIGHT - 90, _to_bottom(Y_NOMBRE), "Fecha:")
     c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT, y, str(receptor.get("num_factura", ""))[:12])
-    y -= line_h
+    c.drawRightString(RIGHT, _to_bottom(Y_NOMBRE), fecha)
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(LEFT, y, "Dirección:")
+    c.drawString(61.7, _to_bottom(Y_DIRECCION), "Dirección:")
     c.setFont("Helvetica", 9)
-    c.drawString(LEFT + 17 * mm, y, str(direccion)[:60])
+    c.drawString(105.4, _to_bottom(Y_DIRECCION), direccion[:70])
     c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(RIGHT - 18 * mm, y, "Fecha:")
+    c.drawRightString(RIGHT - 90, _to_bottom(Y_DIRECCION), "Nº Fact:")
     c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT, y, datetime.now().strftime("%d/%m/%Y"))
-    y -= line_h
+    c.drawRightString(RIGHT, _to_bottom(Y_DIRECCION), num_factura[:12])
+
+    next_y = Y_DIRECCION + 10.7
+    if direccion2:
+        c.setFont("Helvetica", 9)
+        c.drawString(105.4, _to_bottom(next_y), direccion2[:70])
+        next_y += 10.7
 
     if admin:
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(LEFT, y, "Admon:")
+        c.drawString(61.7, _to_bottom(next_y), "Admon:")
         c.setFont("Helvetica", 9)
-        c.drawString(LEFT + 17 * mm, y, str(admin)[:60])
-        y -= line_h
-
-    if nif:
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(LEFT, y, "CIF/NIF:")
-        c.setFont("Helvetica", 9)
-        c.drawString(LEFT + 17 * mm, y, str(nif)[:20])
-        y -= line_h
+        c.drawString(105.4, _to_bottom(next_y), admin[:60])
+        next_y += 10.7
 
     if telefono:
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(LEFT, y, "Telf:")
+        c.drawRightString(RIGHT - 90, _to_bottom(Y_TELF), "Telf:")
         c.setFont("Helvetica", 9)
-        c.drawString(LEFT + 17 * mm, y, str(telefono)[:20])
-        y -= line_h
+        c.drawRightString(RIGHT, _to_bottom(Y_TELF), telefono[:20])
 
-    return y - 3 * mm
-
-
-def _draw_diagnosis(c: canvas.Canvas, y: float, receptor: dict) -> float:
-    diagnosis = receptor.get("diagnosis", "")
     if diagnosis:
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(LEFT, y, "Diagnosis:")
+        c.drawString(61.7, _to_bottom(Y_DIAGNOSIS), "Diagnosis:")
         c.setFont("Helvetica", 9)
-        c.drawString(LEFT + 17 * mm, y, diagnosis[:80])
-        y -= 7 * mm
-    return y - 3 * mm
+        c.drawString(105.4, _to_bottom(Y_DIAGNOSIS), diagnosis[:80])
 
 
-def _draw_table(
+def _draw_table_section(
     c: canvas.Canvas,
-    y: float,
-    title: str,
+    y_subheaders: float,
+    y_headers: float,
+    y_first_row: float,
+    y_totals: float,
     items: list[dict],
-) -> tuple[float, float]:
-    row_h = 4.5 * mm
+    title: str,
+    draw_subheaders: bool = True,
+    draw_ref_header: bool = True,
+) -> float:
+    """Draw a single table section (MATERIAL or MANO DE OBRA).
+    Returns the subtotal for this section."""
 
-    # Sub-header line: "Tarifa", "Total", "Neto" above the right columns
-    c.setFont("Helvetica-Bold", 8)
-    c.drawRightString(COL_PRECIO, y, "Tarifa")
-    c.drawRightString(COL_TOTAL, y, "Total")
-    c.drawRightString(COL_NETO, y, "Neto")
-    y -= 3.5 * mm
+    if draw_subheaders:
+        # Tarifa / Total / Neto
+        c.setFont("Helvetica-Bold", 9)
+        c.drawRightString(COL_PRECIO, _to_bottom(y_subheaders), "Tarifa")
+        c.drawRightString(COL_TOTAL, _to_bottom(y_subheaders), "Total")
+        c.drawRightString(COL_NETO, _to_bottom(y_subheaders), "Neto")
 
     # Column headers
-    c.setFont("Helvetica-Bold", 8)
-    c.drawString(COL_REF, y, "REF.")
-    c.drawString(COL_DENOM, y, "DENOMINACION")
-    c.drawRightString(COL_CANT, y, "CANT.")
-    c.drawRightString(COL_PRECIO, y, "Euros")
-    c.drawRightString(COL_TOTAL, y, "Euros")
-    c.drawRightString(COL_DTO, y, "DTO(%)")
-    c.drawRightString(COL_NETO, y, "Euros")
-    y -= 3 * mm
+    c.setFont("Helvetica-Bold", 9)
+    if draw_ref_header:
+        c.drawString(COL_REF, _to_bottom(y_headers), "REF.")
+    c.drawString(COL_DENOM, _to_bottom(y_headers), "DENOMINACION")
+    c.drawRightString(COL_CANT, _to_bottom(y_headers), "CANT.")
+    c.drawRightString(COL_PRECIO, _to_bottom(y_headers), "Euros")
+    c.drawRightString(COL_TOTAL, _to_bottom(y_headers), "Euros")
+    c.drawRightString(COL_DTO, _to_bottom(y_headers), "DTO(%)")
+    c.drawRightString(COL_NETO, _to_bottom(y_headers), "Euros")
 
-    c.line(LEFT, y, RIGHT, y)
-    y -= row_h
-
-    c.setFont("Helvetica", 8)
     subtotal = 0.0
+    current_y = y_first_row
+
+    # Draw data rows
     for it in items:
-        desc = str(it.get("descripcion", ""))[:32]
+        desc = str(it.get("descripcion", ""))
         cant = float(it.get("cantidad", 0) or 0)
         precio = float(it.get("precio", 0) or 0)
         dto = float(it.get("descuento", 0) or 0)
@@ -152,74 +212,87 @@ def _draw_table(
         subtotal += neto
 
         ref = str(it.get("ref", ""))
-        if ref:
-            c.drawString(COL_REF, y, ref[:6])
-        c.drawString(COL_DENOM, y, desc)
-        c.drawRightString(COL_CANT, y, f"{cant:g}" if cant else "")
-        c.drawRightString(COL_PRECIO, y, _fmt_num(precio) if precio else "")
-        c.drawRightString(COL_TOTAL, y, _fmt_num(total_linea) if total_linea else "")
+
+        c.setFont("Helvetica", 9)
+        # Description may wrap to 2 lines (like the model)
+        lines = _wrap_text(desc, 40)
+        for i, line in enumerate(lines[:2]):
+            c.drawString(COL_DENOM, _to_bottom(current_y + i * ROW_HEIGHT), line)
+
+        if ref and draw_ref_header:
+            c.drawString(COL_REF, _to_bottom(current_y), ref[:6])
+        c.drawRightString(COL_CANT, _to_bottom(current_y), f"{cant:g}" if cant else "")
+        c.drawRightString(COL_PRECIO, _to_bottom(current_y), _fmt_num(precio) if precio else "")
+        c.drawRightString(COL_TOTAL, _to_bottom(current_y), _fmt_num(total_linea) if total_linea else "")
         if dto:
-            c.drawRightString(COL_DTO, y, f"{dto:g}")
-        c.drawRightString(COL_NETO, y, _fmt_num(neto) if neto else "0,00")
-        y -= row_h
+            c.drawRightString(COL_DTO, _to_bottom(current_y), f"{dto:g}")
+        c.drawRightString(COL_NETO, _to_bottom(current_y), _fmt_num(neto) if neto else "0,00")
 
-    y -= 2 * mm
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(COL_DENOM, y, title)
-    c.drawRightString(COL_TOTAL, y, "Totales")
-    c.drawRightString(COL_NETO, y, _fmt_num(subtotal))
-    y -= 8 * mm
+        current_y += ROW_HEIGHT * max(1, len(lines[:2]))
 
-    return y, subtotal
+    # Section totals line
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(COL_DENOM, _to_bottom(y_totals), title)
+    c.drawRightString(COL_TOTAL, _to_bottom(y_totals), "Totales")
+    c.drawRightString(COL_NETO, _to_bottom(y_totals), _fmt_num(subtotal))
+
+    return subtotal
 
 
-def _draw_igic_and_totals(
-    c: canvas.Canvas,
-    y: float,
-    subtotal_material: float,
-    subtotal_mano_obra: float,
-) -> tuple[float, float, float, float]:
+def _draw_igic(c: canvas.Canvas, subtotal_material: float, subtotal_mano_obra: float) -> float:
     igic = subtotal_mano_obra * IGIC_RATE
-    total_mano_obra_igic = subtotal_mano_obra + igic
-    gran_total = subtotal_material + total_mano_obra_igic
+    total_mo = subtotal_mano_obra + igic
+    gran_total = subtotal_material + total_mo
 
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(COL_DENOM, y, "IGIC")
+    c.drawString(COL_DENOM, _to_bottom(Y_IGIC), "IGIC")
     c.setFont("Helvetica", 9)
-    c.drawRightString(COL_CANT, y, str(IGIC_RATE))
-    c.drawRightString(COL_PRECIO, y, _fmt_num(igic))
+    c.drawRightString(COL_CANT, _to_bottom(Y_IGIC), "7%")
+    c.drawRightString(COL_PRECIO, _to_bottom(Y_IGIC), _fmt_num(igic) + " €")
     c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(COL_TOTAL, y, "Totales")
-    c.drawRightString(COL_NETO, y, _fmt_num(total_mano_obra_igic))
-    y -= 8 * mm
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC), "Totales")
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC), _fmt_num(total_mo))
 
-    y -= 4 * mm
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(COL_DENOM, y, "TOTALES")
-    c.drawRightString(COL_TOTAL, y, "EUROS")
-    c.drawRightString(COL_NETO, y, _fmt_num(gran_total))
-    y -= 12 * mm
-
-    return y, igic, gran_total, subtotal_mano_obra
-
-
-def _draw_footer(c: canvas.Canvas, y: float) -> None:
-    footer_y = 25 * mm
-    if y < footer_y + 20 * mm:
-        c.showPage()
-        y = PAGE_HEIGHT - 20 * mm
-
-    y = footer_y + 20 * mm
-
+    # Empty rows between IGIC and TOTALES
     c.setFont("Helvetica", 9)
-    c.drawString(LEFT, y, "Conforme cliente,")
-    c.drawRightString(RIGHT, y, "Número de cuenta BBVA: ES1201823000480201516435")
-    y -= 6 * mm
-    c.drawString(LEFT, y, "C/Los Toledo, Edificio Yaiza 4, San Isidro 38611")
-    y -= 6 * mm
-    c.drawRightString(RIGHT, y, "Proyectos y Asistencia Técnica")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 10.7), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 10.7), "0,00")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 21.4), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 21.4), "0,00")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 32.1), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 32.1), "0,00")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 42.8), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 42.8), "0,00")
+
+    # TOTALES row
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(151.8, _to_bottom(Y_TOTALES), "TOTALES")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES), "EUROS")
+    c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES), _fmt_num(gran_total))
+
+    return gran_total
 
 
+def _draw_footer(c: canvas.Canvas) -> None:
+    c.setFont("Helvetica", 9)
+    c.drawString(61.8, _to_bottom(Y_FOOTER1), "Conforme cliente")
+    c.drawString(230.3, _to_bottom(Y_FOOTER1), "Número de cuenta BBVA: ES1201823000480201516435")
+
+    c.drawString(61.8, _to_bottom(Y_FOOTER2), "C/Los Toledo ,Edificio Yaiza 4, San Isidro 38611")
+
+    c.drawRightString(RIGHT, _to_bottom(Y_FOOTER3), "Proyectos y Asistencia Técnica")
+
+    # Empty rows between TOTALES and footer
+    c.setFont("Helvetica", 9)
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES + 10.7), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES + 10.7), "0,00")
+    c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES + 21.4), "0,00")
+    c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES + 21.4), "0,00")
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 def generar_factura_pdf(
     receptor: dict,
     conceptos: list[dict],
@@ -228,20 +301,24 @@ def generar_factura_pdf(
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    y = PAGE_HEIGHT - 20 * mm
-    y = _draw_header(c, y)
-    y = _draw_cliente(c, y, receptor)
-    y = _draw_diagnosis(c, y, receptor)
+    _draw_header(c)
+    _draw_cliente(c, receptor)
 
     material = [it for it in conceptos if it.get("tipo", "material") == "material"]
     mano_obra = [it for it in conceptos if it.get("tipo") == "mano_obra"]
 
-    y, sub_mat = _draw_table(c, y, "MATERIAL", material)
-    y, sub_mo = _draw_table(c, y, "MANO DE OBRA", mano_obra)
+    sub_mat = _draw_table_section(
+        c, Y_SUBHEADERS, Y_HEADERS, Y_FIRST_ROW, Y_MATERIAL_TOTAL,
+        material, "MATERIAL", draw_subheaders=True, draw_ref_header=True,
+    )
 
-    y, igic, gran_total, _ = _draw_igic_and_totals(c, y, sub_mat, sub_mo)
+    sub_mo = _draw_table_section(
+        c, Y_MANO_HEADERS - 10.7, Y_MANO_HEADERS, Y_MANO_FIRST_ROW, Y_MANO_TOTAL,
+        mano_obra, "MANO DE OBRA", draw_subheaders=False, draw_ref_header=True,
+    )
 
-    _draw_footer(c, y)
+    _draw_igic(c, sub_mat, sub_mo)
+    _draw_footer(c)
 
     if tipo == "provisional":
         c.saveState()
