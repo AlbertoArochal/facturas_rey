@@ -61,9 +61,9 @@ def _draw_cliente(c: canvas.Canvas, y: float, receptor: dict) -> float:
     c.setFont("Helvetica", 9)
     c.drawString(LEFT + 17 * mm, y, str(nombre)[:60])
     c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(RIGHT, y, "Nº Fact:")
+    c.drawRightString(RIGHT - 18 * mm, y, "Nº Fact:")
     c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT - 18 * mm, y, str(receptor.get("num_factura", ""))[:30])
+    c.drawRightString(RIGHT, y, str(receptor.get("num_factura", ""))[:12])
     y -= line_h
 
     c.setFont("Helvetica-Bold", 9)
@@ -71,9 +71,9 @@ def _draw_cliente(c: canvas.Canvas, y: float, receptor: dict) -> float:
     c.setFont("Helvetica", 9)
     c.drawString(LEFT + 17 * mm, y, str(direccion)[:60])
     c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(RIGHT, y, "Fecha:")
+    c.drawRightString(RIGHT - 18 * mm, y, "Fecha:")
     c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT - 18 * mm, y, datetime.now().strftime("%d/%m/%Y"))
+    c.drawRightString(RIGHT, y, datetime.now().strftime("%d/%m/%Y"))
     y -= line_h
 
     if admin:
