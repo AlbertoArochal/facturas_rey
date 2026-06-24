@@ -10,7 +10,17 @@
 - Configuración Vercel (`vercel.json`, `requirements.txt`)
 - Layout actualizado con título "Facturas Rey"
 
+## Commit 2 — Dashboard y formulario base
+
+- Creada pantalla Dashboard (`/`) con botón "Generar Factura"
+- Creado formulario de factura (`/factura`) con:
+  - Campos de datos del receptor (nombre, NIF, dirección)
+  - 5 filas iniciales de conceptos con botón "Agregar más"
+  - Botones "Factura Provisional" y "Factura Final"
+- Instaladas dependencias Python en venv local
+- Dev server funcionando en `http://localhost:3000`
+
 ### Próximos pasos:
-1. Implementar pantalla Dashboard (Home) con botón "Generar Factura" y persistencia
-2. Implementar formulario de factura con datos de receptor y conceptos dinámicos
-3. Conectar frontend con backend Python
+1. Implementar lógica client-side (autocalcular importes, persistencia localStorage)
+2. Implementar validaciones y warnings visuales
+3. Conectar frontend con backend Python para generación de PDF
