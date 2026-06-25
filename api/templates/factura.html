@@ -240,17 +240,6 @@
         <td class="col-neto right">{{ item.neto|fmt }}</td>
       </tr>
       {% endfor %}
-      {% for _ in range(material|length, 22) %}
-      <tr>
-        <td class="col-ref"></td>
-        <td class="col-denom left"></td>
-        <td class="col-cant"></td>
-        <td class="col-euro right"></td>
-        <td class="col-euro right">0,00</td>
-        <td class="col-dto"></td>
-        <td class="col-neto right">0,00</td>
-      </tr>
-      {% endfor %}
       <tr class="total-row">
         <td class="col-ref"></td>
         <td class="col-denom left">MATERIAL</td>
@@ -297,17 +286,6 @@
         <td class="col-euro right">{{ item.total_linea|fmt }}</td>
         <td class="col-dto">{{ item.descuento if item.descuento else '' }}</td>
         <td class="col-neto right">{{ item.neto|fmt }}</td>
-      </tr>
-      {% endfor %}
-      {% for _ in range(mano_obra|length, 8) %}
-      <tr>
-        <td class="col-ref"></td>
-        <td class="col-denom left"></td>
-        <td class="col-cant"></td>
-        <td class="col-euro right"></td>
-        <td class="col-euro right">0,00</td>
-        <td class="col-dto"></td>
-        <td class="col-neto right">0,00</td>
       </tr>
       {% endfor %}
       <tr class="total-row">
