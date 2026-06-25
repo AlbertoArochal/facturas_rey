@@ -54,6 +54,13 @@ export default function Home() {
             Generar Factura
           </Link>
 
+          <Link
+            href="/ayuda"
+            className="inline-block w-full rounded-lg border border-surface-1 px-6 py-3.5 text-sm text-subtext-0 hover:bg-surface-0 transition-colors min-h-[48px] flex items-center justify-center"
+          >
+            ¿Cómo funciona?
+          </Link>
+
           {(tieneDatos || tienePdf) && (
             <div className="border-t border-surface-0 pt-8 mt-8 space-y-4">
               <p className="text-sm text-overlay-1">
