@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Factura</title>
+  <style>
+    @page { size: A4; margin: 0; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #000;
+      width: 210mm;
+      height: 297mm;
+      padding: 12mm 12mm 12mm 12mm;
+    }
+
+    /* ── Blue banner ── */
+    .banner {
+      background: #5B9BD5;
+      color: #fff;
+      height: 32mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8mm;
+      margin-bottom: 2mm;
+    }
+    .banner-name {
+      font-size: 22pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .banner-right {
+      text-align: right;
+      font-size: 10pt;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    /* ── FACTURA label ── */
+    .factura-label {
+      display: inline-block;
+      border: 1px solid #000;
+      padding: 1mm 4mm;
+      font-weight: bold;
+      font-size: 10pt;
+      margin-bottom: 1mm;
+    }
+
+    /* ── Client area ── */
+    .client-area {
+      display: flex;
+      gap: 2mm;
+      margin-bottom: 4mm;
+    }
+    .client-left {
+      flex: 1;
+      border: 1px solid #000;
+      padding: 2mm;
+    }
+    .client-row {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 1mm;
+    }
+    .client-row .lbl { font-weight: bold; min-width: 22mm; }
+    .client-row .val { flex: 1; }
+
+    .client-right {
+      width: 60mm;
+      border: 1px solid #000;
+      padding: 2mm;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #000;
+      padding: 1mm 0;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .lbl { font-weight: bold; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4mm;
+      font-size: 9.5pt;
+    }
+    table th, table td {
+      border: 1px solid #000;
+      padding: 1.5mm 2mm;
+      text-align: center;
+    }
+    table th { font-weight: bold; background: #fff; }
+    table td { text-align: center; }
+    table td.left { text-align: left; }
+    table td.right { text-align: right; }
+
+    /* Column widths */
+    .col-ref   { width: 10%; }
+    .col-denom { width: 28%; }
+    .col-cant  { width: 8%; }
+    .col-euro  { width: 10%; }
+    .col-dto   { width: 8%; }
+    .col-neto  { width: 12%; }
+
+    /* Sub-header row */
+    .subhead th { border-bottom: 2px solid #000; }
+
+    /* Total rows */
+    .total-row td { font-weight: bold; border-top: 2px solid #000; }
+
+    /* Spacer between tables */
+    .spacer { height: 6mm; }
+
+    /* ── IGIC row ── */
+    .igic-row td { font-weight: bold; border-top: 2px solid #000; }
+
+    /* ── TOTALES box ── */
+    .totales-box {
+      width: 80%;
+      margin: 4mm auto;
+      border: 2px solid #000;
+      display: flex;
+    }
+    .totales-box > div {
+      flex: 1;
+      padding: 2mm;
+      text-align: center;
+      font-weight: bold;
+      font-size: 11pt;
+      border-right: 1px solid #000;
+    }
+    .totales-box > div:last-child { border-right: none; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 6mm;
+      font-size: 9.5pt;
+    }
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2mm;
+    }
+    .footer-line {
+      border-top: 1px solid #000;
+      margin-top: 3mm;
+      padding-top: 1mm;
+      text-align: right;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Banner -->
+  <div class="banner">
+    <div class="banner-name">Reinaldo  Rocha  López</div>
+    <div class="banner-right">
+      ELECTRICIDAD &<br>FONTANERÍA
+    </div>
+  </div>
+
+  <!-- FACTURA label -->
+  <div class="factura-label">FACTURA</div>
+
+  <!-- Client area -->
+  <div class="client-area">
+    <div class="client-left">
+      <div class="client-row"><span class="lbl">Nombre:</span><span class="val">{{ receptor.nombre }}</span></div>
+      <div class="client-row"><span class="lbl">Dirección:</span><span class="val">{{ receptor.direccion }}</span></div>
+      {% if receptor.direccion2 %}
+      <div class="client-row"><span class="lbl"></span><span class="val">{{ receptor.direccion2 }}</span></div>
+      {% endif %}
+      <div class="client-row"><span class="lbl">Diagnosis:</span><span class="val">{{ receptor.diagnosis }}</span></div>
+    </div>
+    <div class="client-right">
+      <div class="info-row"><span class="lbl">CIF:</span><span>78729195B</span></div>
+      <div class="info-row"><span class="lbl">Fecha:</span><span>{{ receptor.fecha }}</span></div>
+      <div class="info-row"><span class="lbl">Nº Fact:</span><span>{{ receptor.num_factura }}</span></div>
+      <div class="info-row"><span class="lbl">Telf:</span><span>{{ receptor.telefono }}</span></div>
+    </div>
+  </div>
+
+  <!-- MATERIAL table -->
+  <table>
+    <thead>
+      <tr class="subhead">
+        <th class="col-ref"></th>
+        <th class="col-denom"></th>
+        <th class="col-cant"></th>
+        <th class="col-euro">Tarifa<br>Euros</th>
+        <th class="col-euro">Total<br>Euros</th>
+        <th class="col-dto"></th>
+        <th class="col-neto">Neto<br>Euros</th>
+      </tr>
+      <tr>
+        <th class="col-ref">REF.</th>
+        <th class="col-denom">DENOMINACION</th>
+        <th class="col-cant">CANT.</th>
+        <th class="col-euro">Euros</th>
+        <th class="col-euro">Euros</th>
+        <th class="col-dto">DTO(%)</th>
+        <th class="col-neto">Euros</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in material %}
+      <tr>
+        <td class="col-ref">{{ item.ref or '' }}</td>
+        <td class="col-denom left">{{ item.descripcion }}</td>
+        <td class="col-cant">{{ item.cantidad if item.cantidad else '' }}</td>
+        <td class="col-euro right">{{ item.precio|fmt }}</td>
+        <td class="col-euro right">{{ item.total_linea|fmt }}</td>
+        <td class="col-dto">{{ item.descuento if item.descuento else '' }}</td>
+        <td class="col-neto right">{{ item.neto|fmt }}</td>
+      </tr>
+      {% endfor %}
+      {% for _ in range(material|length, 22) %}
+      <tr>
+        <td class="col-ref"></td>
+        <td class="col-denom left"></td>
+        <td class="col-cant"></td>
+        <td class="col-euro right"></td>
+        <td class="col-euro right">0,00</td>
+        <td class="col-dto"></td>
+        <td class="col-neto right">0,00</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td class="col-ref"></td>
+        <td class="col-denom left">MATERIAL</td>
+        <td class="col-cant"></td>
+        <td class="col-euro right"></td>
+        <td class="col-euro right">Totales</td>
+        <td class="col-dto"></td>
+        <td class="col-neto right">{{ subtotal_material|fmt }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="spacer"></div>
+
+  <!-- MANO DE OBRA table -->
+  <table>
+    <thead>
+      <tr>
+        <th class="col-ref"></th>
+        <th class="col-denom">DENOMINACION</th>
+        <th class="col-cant">CANT.</th>
+        <th class="col-euro">Euros</th>
+        <th class="col-euro">Euros</th>
+        <th class="col-dto">DTO(%)</th>
+        <th class="col-neto">Euros</th>
+      </tr>
+      <tr>
+        <th class="col-ref">REF.</th>
+        <th class="col-denom"></th>
+        <th class="col-cant"></th>
+        <th class="col-euro"></th>
+        <th class="col-euro"></th>
+        <th class="col-dto"></th>
+        <th class="col-neto"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in mano_obra %}
+      <tr>
+        <td class="col-ref">{{ item.ref or '' }}</td>
+        <td class="col-denom left">{{ item.descripcion }}</td>
+        <td class="col-cant">{{ item.cantidad if item.cantidad else '' }}</td>
+        <td class="col-euro right">{{ item.precio|fmt }}</td>
+        <td class="col-euro right">{{ item.total_linea|fmt }}</td>
+        <td class="col-dto">{{ item.descuento if item.descuento else '' }}</td>
+        <td class="col-neto right">{{ item.neto|fmt }}</td>
+      </tr>
+      {% endfor %}
+      {% for _ in range(mano_obra|length, 8) %}
+      <tr>
+        <td class="col-ref"></td>
+        <td class="col-denom left"></td>
+        <td class="col-cant"></td>
+        <td class="col-euro right"></td>
+        <td class="col-euro right">0,00</td>
+        <td class="col-dto"></td>
+        <td class="col-neto right">0,00</td>
+      </tr>
+      {% endfor %}
+      <tr class="total-row">
+        <td class="col-ref"></td>
+        <td class="col-denom left">MANO DE OBRA</td>
+        <td class="col-cant"></td>
+        <td class="col-euro right"></td>
+        <td class="col-euro right">Totales</td>
+        <td class="col-dto"></td>
+        <td class="col-neto right">{{ subtotal_mano_obra|fmt }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- IGIC row -->
+  <table>
+    <tbody>
+      <tr class="igic-row">
+        <td class="col-ref"></td>
+        <td class="col-denom left">IGIC</td>
+        <td class="col-cant">7%</td>
+        <td class="col-euro right">{{ igic|fmt }} €</td>
+        <td class="col-euro right">Totales</td>
+        <td class="col-dto"></td>
+        <td class="col-neto right">{{ total_con_igic|fmt }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TOTALES -->
+  <div class="totales-box">
+    <div>TOTALES</div>
+    <div>EUROS</div>
+    <div>{{ total_con_igic|fmt }}</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-row">
+      <span>Conforme cliente</span>
+      <span>Número de cuenta BBVA: ES1201823000480201516435</span>
+    </div>
+    <div class="footer-line">
+      C/Los Toledo ,Edificio Yaiza 4, San Isidro 38611<br>
+      Proyectos y Asistencia Técnica
+    </div>
+  </div>
+
+</body>
+</html>
