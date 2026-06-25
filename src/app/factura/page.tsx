@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Trash2, FileText, FileCheck, ChevronUp } from "lucide-react";
 
 type Concepto = {
   descripcion: string;
@@ -112,6 +113,13 @@ function FacturaForm() {
       ...prev,
       { descripcion: "", cantidad: "", precio: "", tipo: "material" },
     ]);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }, 50);
+  };
+
+  const eliminarFila = (idx: number) => {
+    setConceptos((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const validar = (): Concepto[] | null => {
@@ -142,10 +150,13 @@ function FacturaForm() {
     return Object.keys(nuevosErrores).length === 0 ? validos : null;
   };
 
+  const [generando, setGenerando] = useState(false);
+
   const generar = async (tipo: "provisional" | "final") => {
     const conceptosValidos = validar();
     if (!conceptosValidos) return;
 
+    setGenerando(true);
     const body = {
       tipo,
       receptor,
@@ -197,25 +208,27 @@ function FacturaForm() {
         ...prev,
         global: "Error al generar la factura. Intente de nuevo.",
       }));
+    } finally {
+      setGenerando(false);
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-base">
-      <header className="bg-mantle border-b border-surface-0">
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-text">Facturas Rey</h1>
+      <header className="bg-mantle border-b border-surface-0 sticky top-0 z-30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+          <h1 className="text-lg sm:text-xl font-bold text-text">Facturas Rey</h1>
           <button
             onClick={() => router.push("/")}
-            className="text-sm text-overlay-1 hover:text-text transition-colors"
+            className="text-sm text-overlay-1 hover:text-text transition-colors px-2 py-1"
           >
-            Volver al inicio
+            Volver
           </button>
         </div>
       </header>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-6">
-        <h2 className="text-lg font-semibold text-text">Nueva Factura</h2>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6 pb-28 sm:pb-8">
+        <h2 className="text-base sm:text-lg font-semibold text-text">Nueva Factura</h2>
 
         {errores.global && (
           <div className="rounded-lg bg-red/10 border border-red px-4 py-3 text-sm text-red">
@@ -223,7 +236,8 @@ function FacturaForm() {
           </div>
         )}
 
-        <section className="bg-mantle rounded-xl border border-surface-0 p-6">
+        {/* CLIENTE */}
+        <section className="bg-mantle rounded-xl border border-surface-0 p-4 sm:p-6">
           <h3 className="text-xs font-semibold text-overlay-1 uppercase tracking-wider mb-4">
             Datos del Receptor
           </h3>
@@ -236,7 +250,7 @@ function FacturaForm() {
                 type="text"
                 value={receptor.nombre}
                 onChange={(e) => actualizarReceptor("nombre", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
             <div>
@@ -247,7 +261,7 @@ function FacturaForm() {
                 type="text"
                 value={receptor.nif}
                 onChange={(e) => actualizarReceptor("nif", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
             <div className="sm:col-span-2">
@@ -258,7 +272,7 @@ function FacturaForm() {
                 type="text"
                 value={receptor.direccion}
                 onChange={(e) => actualizarReceptor("direccion", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
             <div>
@@ -266,10 +280,11 @@ function FacturaForm() {
                 Teléfono
               </label>
               <input
-                type="text"
+                type="tel"
+                inputMode="tel"
                 value={receptor.telefono}
                 onChange={(e) => actualizarReceptor("telefono", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
             <div>
@@ -280,7 +295,7 @@ function FacturaForm() {
                 type="text"
                 value={receptor.num_factura}
                 onChange={(e) => actualizarReceptor("num_factura", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
             <div className="sm:col-span-2">
@@ -291,51 +306,58 @@ function FacturaForm() {
                 type="text"
                 value={receptor.diagnosis}
                 onChange={(e) => actualizarReceptor("diagnosis", e.target.value)}
-                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
               />
             </div>
           </div>
         </section>
 
-        <section className="bg-mantle rounded-xl border border-surface-0 p-6">
+        {/* CONCEPTOS */}
+        <section className="bg-mantle rounded-xl border border-surface-0 p-4 sm:p-6">
           <h3 className="text-xs font-semibold text-overlay-1 uppercase tracking-wider mb-4">
             Conceptos
           </h3>
 
+          {/* Desktop headers */}
           <div className="hidden sm:grid grid-cols-12 gap-3 mb-2 px-3">
             <div className="col-span-5">
-              <span className="text-xs text-overlay-1 uppercase tracking-wider">
-                Descripción
-              </span>
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">Descripción</span>
             </div>
             <div className="col-span-2">
-              <span className="text-xs text-overlay-1 uppercase tracking-wider">
-                Tipo
-              </span>
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">Tipo</span>
             </div>
             <div className="col-span-1">
-              <span className="text-xs text-overlay-1 uppercase tracking-wider">
-                Cant.
-              </span>
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">Cant.</span>
             </div>
             <div className="col-span-2">
-              <span className="text-xs text-overlay-1 uppercase tracking-wider">
-                Precio
-              </span>
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">Precio</span>
             </div>
             <div className="col-span-2">
-              <span className="text-xs text-overlay-1 uppercase tracking-wider">
-                Importe
-              </span>
+              <span className="text-xs text-overlay-1 uppercase tracking-wider">Importe</span>
             </div>
           </div>
 
           {conceptos.map((c, i) => {
             const importe = parseNum(c.cantidad) * parseNum(c.precio);
             return (
-              <div key={i}>
-                <div className="grid grid-cols-12 gap-3 mb-1">
+              <div key={i} className="mb-4 sm:mb-1 pb-4 sm:pb-0 border-b sm:border-0 border-surface-0">
+                {/* Mobile label + delete */}
+                <div className="flex items-center justify-between sm:hidden mb-2">
+                  <span className="text-xs font-semibold text-overlay-1 uppercase tracking-wider">Concepto {i + 1}</span>
+                  {conceptos.length > 1 && (
+                    <button
+                      onClick={() => eliminarFila(i)}
+                      className="text-red p-1"
+                      aria-label="Eliminar concepto"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-12 sm:col-span-5">
+                    <label className="block sm:hidden text-xs text-overlay-1 mb-1">Descripción</label>
                     <input
                       type="text"
                       value={c.descripcion}
@@ -343,10 +365,11 @@ function FacturaForm() {
                         actualizarConcepto(i, "descripcion", e.target.value)
                       }
                       placeholder="Descripción"
-                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
                     />
                   </div>
                   <div className="col-span-7 sm:col-span-2">
+                    <label className="block sm:hidden text-xs text-overlay-1 mb-1">Tipo</label>
                     <select
                       value={c.tipo}
                       onChange={(e) =>
@@ -356,47 +379,50 @@ function FacturaForm() {
                           e.target.value as "material" | "mano_obra"
                         )
                       }
-                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-2 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-2 py-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
                     >
                       <option value="material">Material</option>
                       <option value="mano_obra">Mano de Obra</option>
                     </select>
                   </div>
-                  <div className="col-span-3 sm:col-span-1">
+                  <div className="col-span-5 sm:col-span-1">
+                    <label className="block sm:hidden text-xs text-overlay-1 mb-1">Cant.</label>
                     <input
                       type="text"
+                      inputMode="decimal"
                       value={c.cantidad}
                       onChange={(e) =>
                         actualizarConcepto(i, "cantidad", e.target.value)
                       }
                       placeholder="0"
-                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
                     />
                   </div>
-                  <div className="col-span-5 sm:col-span-2">
+                  <div className="col-span-7 sm:col-span-2">
+                    <label className="block sm:hidden text-xs text-overlay-1 mb-1">Precio</label>
                     <input
                       type="text"
+                      inputMode="decimal"
                       value={c.precio}
                       onChange={(e) =>
                         actualizarConcepto(i, "precio", e.target.value)
                       }
-                      placeholder="0.00"
-                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 py-2 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all"
+                      placeholder="0,00"
+                      className="w-full rounded-lg border border-surface-1 bg-surface-0 px-3 sm:px-4 py-3 text-sm text-text placeholder-overlay-1 focus:outline-none focus:ring-2 focus:ring-mauve focus:border-transparent transition-all min-h-[48px]"
                     />
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
+                  <div className="col-span-5 sm:col-span-2">
+                    <label className="block sm:hidden text-xs text-overlay-1 mb-1">Importe</label>
                     <input
                       type="text"
                       value={fmtImporte(importe)}
                       readOnly
-                      className="w-full rounded-lg border border-surface-0 bg-crust px-3 py-2 text-sm text-overlay-2"
+                      className="w-full rounded-lg border border-surface-0 bg-crust px-3 sm:px-4 py-3 text-sm text-overlay-2 min-h-[48px]"
                     />
                   </div>
                 </div>
                 {errores[`conc_${i}`] && (
-                  <p className="text-xs text-red mb-1 col-span-12">
-                    {errores[`conc_${i}`]}
-                  </p>
+                  <p className="text-xs text-red mt-1">{errores[`conc_${i}`]}</p>
                 )}
               </div>
             );
@@ -404,27 +430,30 @@ function FacturaForm() {
 
           <button
             onClick={agregarFila}
-            className="mt-3 text-sm text-mauve hover:text-lavender transition-colors"
+            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-mauve hover:text-lavender transition-colors px-2 py-2"
           >
-            + Agregar más
+            <Plus size={18} /> Agregar concepto
           </button>
         </section>
-
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={() => generar("provisional")}
-            className="rounded-lg border border-surface-1 px-6 py-2.5 text-sm font-medium text-subtext-0 hover:bg-surface-0 hover:text-text transition-all"
-          >
-            Factura Provisional
-          </button>
-          <button
-            onClick={() => generar("final")}
-            className="rounded-lg bg-green text-base px-6 py-2.5 text-sm font-medium hover:brightness-110 transition-all"
-          >
-            Factura Final
-          </button>
-        </div>
       </main>
+
+      {/* Sticky bottom bar for actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-mantle/95 backdrop-blur-sm border-t border-surface-0 px-4 py-4 sm:py-5 z-40 sm:static sm:bg-transparent sm:border-0 sm:px-6 sm:py-0 sm:max-w-4xl sm:mx-auto sm:flex sm:justify-end sm:gap-3 sm:mb-8">
+        <button
+          onClick={() => generar("provisional")}
+          disabled={generando}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg border border-surface-1 px-6 py-3.5 text-sm font-medium text-subtext-0 hover:bg-surface-0 hover:text-text transition-all disabled:opacity-50"
+        >
+          <FileText size={18} /> Factura Provisional
+        </button>
+        <button
+          onClick={() => generar("final")}
+          disabled={generando}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-green text-base px-6 py-3.5 text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 mt-3 sm:mt-0"
+        >
+          <FileCheck size={18} /> {generando ? "Generando..." : "Factura Final"}
+        </button>
+      </div>
     </div>
   );
 }
