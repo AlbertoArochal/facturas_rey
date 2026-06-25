@@ -125,11 +125,7 @@ function FacturaForm() {
 
       if (!tieneDesc && !tieneCant && !tienePrecio) return;
 
-      if (tieneDesc && (!tieneCant || !tienePrecio)) {
-        nuevosErrores[`conc_${i}`] = "Campos obligatorios faltantes";
-        return;
-      }
-
+      // Only validate that cantidad/precio are numbers when provided
       if (tieneCant && isNaN(parseNum(c.cantidad))) {
         nuevosErrores[`conc_${i}`] = "Cantidad no válida";
         return;

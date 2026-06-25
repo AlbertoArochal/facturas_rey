@@ -20,9 +20,9 @@ COL_REF = 72.1
 COL_DENOM = 134.0
 COL_CANT = 241.7
 COL_PRECIO = 287.2
-COL_TOTAL = 344.8
+COL_TOTAL = 371.0
 COL_DTO = 392.0
-COL_NETO = 475.7
+COL_NETO = 530.4
 
 # Vertical positions from TOP of the page (pts)
 # In ReportLab y=0 is the bottom, so we use PAGE_HEIGHT - y_top
@@ -135,10 +135,6 @@ def _draw_cliente(c: canvas.Canvas, receptor: dict) -> None:
     c.drawString(61.7, _to_bottom(Y_DIRECCION), "Dirección:")
     c.setFont("Helvetica", 9)
     c.drawString(105.4, _to_bottom(Y_DIRECCION), direccion[:70])
-    c.setFont("Helvetica-Bold", 9)
-    c.drawRightString(RIGHT - 90, _to_bottom(Y_DIRECCION), "Nº Fact:")
-    c.setFont("Helvetica", 9)
-    c.drawRightString(RIGHT, _to_bottom(Y_DIRECCION), num_factura[:12])
 
     next_y = Y_DIRECCION + 10.7
     if direccion2:
@@ -159,6 +155,12 @@ def _draw_cliente(c: canvas.Canvas, receptor: dict) -> None:
         c.setFont("Helvetica", 9)
         c.drawRightString(RIGHT, _to_bottom(Y_TELF), telefono[:20])
 
+    if num_factura:
+        c.setFont("Helvetica-Bold", 9)
+        c.drawRightString(RIGHT - 90, _to_bottom(Y_DIRECCION), "Nº Fact:")
+        c.setFont("Helvetica", 9)
+        c.drawRightString(RIGHT, _to_bottom(Y_DIRECCION), num_factura[:12])
+
     if diagnosis:
         c.setFont("Helvetica-Bold", 9)
         c.drawString(61.7, _to_bottom(Y_DIAGNOSIS), "Diagnosis:")
@@ -175,10 +177,14 @@ def _draw_table_section(
     items: list[dict],
     title: str,
     draw_subheaders: bool = True,
-    draw_ref_header: bool = True,
+    split_ref_header: bool = False,
 ) -> float:
     """Draw a single table section (MATERIAL or MANO DE OBRA).
-    Returns the subtotal for this section."""
+    Returns the subtotal for this section.
+
+    * split_ref_header=True  → first row = DENOM..CANT..Euros..Euros..DTO(%)..Euros,
+                                 second row = REF., data starts below.
+    * split_ref_header=False → single header row with REF. included."""
 
     if draw_subheaders:
         # Tarifa / Total / Neto
@@ -189,7 +195,7 @@ def _draw_table_section(
 
     # Column headers
     c.setFont("Helvetica-Bold", 9)
-    if draw_ref_header:
+    if not split_ref_header:
         c.drawString(COL_REF, _to_bottom(y_headers), "REF.")
     c.drawString(COL_DENOM, _to_bottom(y_headers), "DENOMINACION")
     c.drawRightString(COL_CANT, _to_bottom(y_headers), "CANT.")
@@ -197,6 +203,9 @@ def _draw_table_section(
     c.drawRightString(COL_TOTAL, _to_bottom(y_headers), "Euros")
     c.drawRightString(COL_DTO, _to_bottom(y_headers), "DTO(%)")
     c.drawRightString(COL_NETO, _to_bottom(y_headers), "Euros")
+
+    if split_ref_header:
+        c.drawString(COL_REF, _to_bottom(y_headers + ROW_HEIGHT), "REF.")
 
     subtotal = 0.0
     current_y = y_first_row
@@ -219,7 +228,7 @@ def _draw_table_section(
         for i, line in enumerate(lines[:2]):
             c.drawString(COL_DENOM, _to_bottom(current_y + i * ROW_HEIGHT), line)
 
-        if ref and draw_ref_header:
+        if ref:
             c.drawString(COL_REF, _to_bottom(current_y), ref[:6])
         c.drawRightString(COL_CANT, _to_bottom(current_y), f"{cant:g}" if cant else "")
         c.drawRightString(COL_PRECIO, _to_bottom(current_y), _fmt_num(precio) if precio else "")
@@ -232,7 +241,7 @@ def _draw_table_section(
 
     # Section totals line
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(COL_DENOM, _to_bottom(y_totals), title)
+    c.drawString(108.0, _to_bottom(y_totals), title)
     c.drawRightString(COL_TOTAL, _to_bottom(y_totals), "Totales")
     c.drawRightString(COL_NETO, _to_bottom(y_totals), _fmt_num(subtotal))
 
@@ -240,10 +249,11 @@ def _draw_table_section(
 
 
 def _draw_igic(c: canvas.Canvas, subtotal_material: float, subtotal_mano_obra: float) -> float:
-    igic = subtotal_mano_obra * IGIC_RATE
-    total_mo = subtotal_mano_obra + igic
-    gran_total = subtotal_material + total_mo
+    combined = subtotal_material + subtotal_mano_obra
+    igic = combined * IGIC_RATE
+    gran_total = combined + igic
 
+    # IGIC row
     c.setFont("Helvetica-Bold", 9)
     c.drawString(COL_DENOM, _to_bottom(Y_IGIC), "IGIC")
     c.setFont("Helvetica", 9)
@@ -251,24 +261,25 @@ def _draw_igic(c: canvas.Canvas, subtotal_material: float, subtotal_mano_obra: f
     c.drawRightString(COL_PRECIO, _to_bottom(Y_IGIC), _fmt_num(igic) + " €")
     c.setFont("Helvetica-Bold", 9)
     c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC), "Totales")
-    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC), _fmt_num(total_mo))
+    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC), _fmt_num(gran_total))
 
-    # Empty rows between IGIC and TOTALES
-    c.setFont("Helvetica", 9)
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 10.7), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 10.7), "0,00")
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 21.4), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 21.4), "0,00")
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 32.1), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 32.1), "0,00")
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + 42.8), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + 42.8), "0,00")
+    # Empty rows between IGIC and TOTALES (4 rows)
+    for i in range(1, 5):
+        c.setFont("Helvetica", 9)
+        c.drawRightString(COL_TOTAL, _to_bottom(Y_IGIC + i * ROW_HEIGHT), "0,00")
+        c.drawRightString(COL_NETO, _to_bottom(Y_IGIC + i * ROW_HEIGHT), "0,00")
 
     # TOTALES row
     c.setFont("Helvetica-Bold", 9)
     c.drawString(151.8, _to_bottom(Y_TOTALES), "TOTALES")
     c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES), "EUROS")
     c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES), _fmt_num(gran_total))
+
+    # 2 empty rows between TOTALES and footer
+    for i in range(1, 3):
+        c.setFont("Helvetica", 9)
+        c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES + i * ROW_HEIGHT), "0,00")
+        c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES + i * ROW_HEIGHT), "0,00")
 
     return gran_total
 
@@ -281,13 +292,6 @@ def _draw_footer(c: canvas.Canvas) -> None:
     c.drawString(61.8, _to_bottom(Y_FOOTER2), "C/Los Toledo ,Edificio Yaiza 4, San Isidro 38611")
 
     c.drawRightString(RIGHT, _to_bottom(Y_FOOTER3), "Proyectos y Asistencia Técnica")
-
-    # Empty rows between TOTALES and footer
-    c.setFont("Helvetica", 9)
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES + 10.7), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES + 10.7), "0,00")
-    c.drawRightString(COL_TOTAL, _to_bottom(Y_TOTALES + 21.4), "0,00")
-    c.drawRightString(COL_NETO, _to_bottom(Y_TOTALES + 21.4), "0,00")
 
 
 # ---------------------------------------------------------------------------
@@ -309,12 +313,12 @@ def generar_factura_pdf(
 
     sub_mat = _draw_table_section(
         c, Y_SUBHEADERS, Y_HEADERS, Y_FIRST_ROW, Y_MATERIAL_TOTAL,
-        material, "MATERIAL", draw_subheaders=True, draw_ref_header=True,
+        material, "MATERIAL", draw_subheaders=True, split_ref_header=False,
     )
 
     sub_mo = _draw_table_section(
         c, Y_MANO_HEADERS - 10.7, Y_MANO_HEADERS, Y_MANO_FIRST_ROW, Y_MANO_TOTAL,
-        mano_obra, "MANO DE OBRA", draw_subheaders=False, draw_ref_header=True,
+        mano_obra, "MANO DE OBRA", draw_subheaders=False, split_ref_header=True,
     )
 
     _draw_igic(c, sub_mat, sub_mo)
