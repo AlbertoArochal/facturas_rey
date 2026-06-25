@@ -154,9 +154,28 @@
       text-align: right;
       font-weight: bold;
     }
+
+    /* ── Watermark ── */
+    .watermark {
+      position: absolute;
+      top: 130mm;
+      left: 50%;
+      transform: translateX(-50%) rotate(-35deg);
+      font-size: 56pt;
+      font-weight: bold;
+      color: rgba(200, 0, 0, 0.10);
+      pointer-events: none;
+      white-space: nowrap;
+      letter-spacing: 4px;
+      z-index: 0;
+    }
   </style>
 </head>
 <body>
+
+  {% if tipo == 'provisional' %}
+  <div class="watermark">PROVISIONAL</div>
+  {% endif %}
 
   <!-- Banner -->
   <div class="banner">
