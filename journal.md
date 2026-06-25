@@ -37,6 +37,15 @@ ebc471a journal actualizado con estado final antes de reinicio de sesión
 - `vercel.json`: Configurado con `"$schema"`, `"framework": "nextjs"` y `"functions": {"api/**/*.py": {"maxDuration": 60}}` para sobreescribir configuración antigua del dashboard que tenía `runtime` sin versión (causaba `Function Runtimes must have a valid version`).
 - `.python-version`: Creado con `3.13` para que Vercel use Python 3.13 explícitamente.
 
-### Pendiente (próxima sesión)
-1. ~~Desplegar en Vercel (verificar que api/index.py funciona con serverless)~~ → Probar `vercel deploy` o `vercel --prod` tras los fixes
-2. ~~Rediseño del PDF para coincidir con el modelo~~ → Completado en commit a43b6cd
+## 25/06/2026
+
+### Commit 781c604
+**Fix PDF layout to match reference: column positions, IGIC calc, split headers, desc-only lines**
+
+Cambios:
+- `api/pdf_generator.py`: COL_TOTAL=371.0, COL_NETO=530.4, IGIC sobre subtotal combinado, headers MO divididos, MATERIAL/MANO DE OBRA en x=108.0, teléfono en Y correcto, footer sin duplicados.
+- `src/app/factura/page.tsx`: validación ya permite líneas solo con descripción (sin cantidad/precio).
+
+### Pendiente
+- ~~Rediseño del PDF~~ → Completado en commit 781c604
+- Desplegar en Vercel cuando el usuario lo solicite
